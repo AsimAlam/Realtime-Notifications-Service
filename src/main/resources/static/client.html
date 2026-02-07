@@ -1,0 +1,61 @@
+<!doctype html>
+<h3>Realtime Notify - Test Client</h3>
+<div>
+    <label>Username: <input id="username" value="alice" /></label>
+    <button id="getToken">Get Token</button>
+</div>
+<div>
+    <button id="connect">Connect</button>
+    <button id="send">Send Private</button>
+    <button id="broadcast">Broadcast</button>
+</div>
+<pre id="log"></pre>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script>
+    let token = null;
+    let client = null;
+    const log = (m)=>{ document.getElementById('log').textContent += m + '\n'; };
+
+
+    document.getElementById('getToken').onclick = async ()=>{
+        const user = document.getElementById('username').value;
+        const r = await fetch('/auth/token?username='+encodeURIComponent(user));
+        const j = await r.json();
+        token = j.token;
+        log('token=' + token);
+    };
+
+
+    document.getElementById('connect').onclick = ()=>{
+        if (!token) { alert('get token first'); return; }
+        const socket = new SockJS('/ws');
+        client = Stomp.over(socket);
+        client.connect({Authorization: 'Bearer ' + token}, (frame)=>{
+            log('connected: ' + frame);
+            client.subscribe('/user/queue/messages', (m)=>{ log('[private] '+m.body); });
+            client.subscribe('/topic/announcements', (m)=>{ log('[topic] '+m.body); });
+// recover missed
+            client.send('/app/recover', {}, JSON.stringify({lastSeenSeq: 0}));
+        }, (err)=>{ log('err ' + JSON.stringify(err)); });
+    };
+
+
+    document.getElementById('send').onclick = ()=>{
+        if (!client) { alert('connect first'); return; }
+        const to = prompt('Send to (username):');
+        const content = prompt('Message content:');
+        client.send('/app/send', {}, JSON.stringify({toUserId: to, content: content}));
+    };
+
+
+    document.getElementById('broadcast').onclick = ()=>{
+        if (!client) { alert('connect first'); return; }
+        const content = prompt('Broadcast content:');
+        client.send('/app/broadcast', {}, JSON.stringify({content: content}));
+    };
+</script>
+</body>
+</html>

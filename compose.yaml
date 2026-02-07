@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notifydb
+      SPRING_REDIS_HOST: redis
+      APP__WEBSOCKET__USE-BROKER-RELAY: "false"
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: notifydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+# If you want RabbitMQ broker-relay in future, uncomment and enable STOMP plugin image
+# rabbitmq:
+# image: rabbitmq:3.11-management
+# ports: ["5672:5672","15672:15672","61613:61613"]

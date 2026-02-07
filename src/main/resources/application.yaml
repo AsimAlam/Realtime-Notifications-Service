@@ -1,0 +1,34 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/notifydb
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  redis:
+    host: 127.0.0.1
+    port: 6379
+
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+app:
+  jwt:
+    secret: secret-key-for-dev-only-please-change
+    expirationMs: 86400000
+
+
+# Toggle between simple broker (dev) and broker-relay (prod)
+app.websocket:
+  use-broker-relay: false
+  relay-host: rabbitmq
+  relay-port: 61613
