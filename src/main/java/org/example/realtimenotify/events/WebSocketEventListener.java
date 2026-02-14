@@ -20,8 +20,9 @@ public class WebSocketEventListener {
   public void handleSessionConnected(SessionConnectedEvent event) {
     StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
     if (sha.getUser() != null) {
-      String user = sha.getUser().getName();
-      presenceService.markOnline(user);
+      String userId = sha.getUser().getName();
+      String sessionId = sha.getSessionId();
+      presenceService.markOnline(userId, sessionId);
     }
   }
 
@@ -29,8 +30,9 @@ public class WebSocketEventListener {
   public void handleSessionDisconnect(SessionDisconnectEvent event) {
     StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
     if (sha.getUser() != null) {
-      String user = sha.getUser().getName();
-      presenceService.markOffline(user);
+      String userId = sha.getUser().getName();
+      String sessionId = sha.getSessionId();
+      presenceService.markOffline(userId, sessionId);
     }
   }
 }

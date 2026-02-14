@@ -6,17 +6,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-/**
- * RateLimiterService: if Redis present uses simple increment-with-expire; otherwise uses an
- * in-memory per-second counter as a fallback.
- *
- * <p>Note: in-memory fallback is NOT distributed and resets on app restart.
- */
 @Service
 public class RateLimiterService {
 
-  private final StringRedisTemplate redis; // may be null
-  private final int limitPerSecond = 10; // change as needed
+  private final StringRedisTemplate redis;
+  private final int limitPerSecond = 10;
 
   // In-memory fallback: map user -> entry
   private static class InMemoryBucket {

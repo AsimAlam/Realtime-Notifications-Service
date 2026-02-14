@@ -9,10 +9,9 @@ import java.util.Date;
 public class JwtService {
 
   private final Key key;
-  private final long expirationMs = 24 * 60 * 60 * 1000L; // 24h - you can override via config
+  private final long expirationMs = 24 * 60 * 60 * 1000L;
 
   public JwtService() {
-    // In prod load from config
     this.key = Keys.hmacShaKeyFor("secret-key-for-dev-only-please-changesecret-key".getBytes());
   }
 
