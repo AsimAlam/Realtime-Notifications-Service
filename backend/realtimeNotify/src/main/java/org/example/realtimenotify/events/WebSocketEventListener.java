@@ -11,9 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-/**
- * Listens for STOMP connect/disconnect events and updates presence using sessionId-aware API.
- */
+/** Listens for STOMP connect/disconnect events and updates presence using sessionId-aware API. */
 @Component
 public class WebSocketEventListener {
 
@@ -23,9 +21,10 @@ public class WebSocketEventListener {
   private final NotificationService notificationService;
   private final SimpMessagingTemplate template;
 
-  public WebSocketEventListener(PresenceService presenceService,
-                                NotificationService notificationService,
-                                SimpMessagingTemplate template) {
+  public WebSocketEventListener(
+      PresenceService presenceService,
+      NotificationService notificationService,
+      SimpMessagingTemplate template) {
     this.presenceService = presenceService;
     this.notificationService = notificationService;
     this.template = template;
@@ -36,11 +35,10 @@ public class WebSocketEventListener {
     StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
     if (sha.getUser() != null) {
       String user = sha.getUser().getName();
-      String sessionId = sha.getSessionId(); // <-- important
+      String sessionId = sha.getSessionId();
       log.debug("STOMP CONNECT: user={}, sessionId={}", user, sessionId);
       presenceService.markOnline(user, sessionId);
 
-      // replay any undelivered messages for this user
       try {
         notificationService.replayPendingUndelivered(user, template);
       } catch (Exception e) {
@@ -64,5 +62,3 @@ public class WebSocketEventListener {
     }
   }
 }
-
-

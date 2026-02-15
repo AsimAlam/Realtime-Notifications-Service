@@ -11,7 +11,7 @@ public class AuthController {
 
   private final JwtService jwtService = new JwtService();
 
-  // Dev-only: for local testing.
+  // for local testing.
   @GetMapping("/auth/token")
   public Map<String, String> token(@RequestParam String username) {
     String token = jwtService.generateToken(username);

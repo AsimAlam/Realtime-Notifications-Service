@@ -5,13 +5,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-/** PresenceService: uses Redis set if available, otherwise in-memory concurrent set. */
+/** used Redis set if available else in-memory used */
 @Service
 public class PresenceService {
   private final StringRedisTemplate redis;
   private static final String GLOBAL_SET_KEY = "presence:users";
 
-  private final ConcurrentHashMap<String, java.util.Set<String>> sessions = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, java.util.Set<String>> sessions =
+      new ConcurrentHashMap<>();
 
   public PresenceService(@Autowired(required = false) StringRedisTemplate redis) {
     this.redis = redis;
@@ -37,10 +38,12 @@ public class PresenceService {
         redis.opsForSet().remove(GLOBAL_SET_KEY, userId);
       }
     } else {
-      sessions.computeIfPresent(userId, (k, set) -> {
-        set.remove(sessionId);
-        return set.isEmpty() ? null : set;
-      });
+      sessions.computeIfPresent(
+          userId,
+          (k, set) -> {
+            set.remove(sessionId);
+            return set.isEmpty() ? null : set;
+          });
     }
   }
 
@@ -63,4 +66,3 @@ public class PresenceService {
     }
   }
 }
-

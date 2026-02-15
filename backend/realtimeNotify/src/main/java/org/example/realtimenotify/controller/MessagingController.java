@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
@@ -33,13 +32,15 @@ public class MessagingController {
   @MessageMapping("/send")
   public void handleMessage(@Payload ClientMessage msg, Principal principal) {
     String from = (principal != null) ? principal.getName() : "anonymous";
-    log.info("STOMP /send received - from={}, to={}, content={}", from, msg.getToUserId(), msg.getContent());
+    log.info(
+        "STOMP /send received - from={}, to={}, content={}",
+        from,
+        msg.getToUserId(),
+        msg.getContent());
     Notification n = notificationService.saveNotification(msg.getToUserId(), msg.getContent());
     log.info("Sending via convertAndSendToUser to={} id={}", msg.getToUserId(), n.getId());
     template.convertAndSendToUser(msg.getToUserId(), "/queue/notifications", n);
   }
-
-
 
   @MessageMapping("/broadcast")
   public void broadcast(@Payload BroadcastMessage message) {
@@ -56,28 +57,42 @@ public class MessagingController {
 
   @MessageMapping("/ack")
   public void handleAck(@Payload AckMessage ack, Principal principal) {
-    // AckMessage contains notificationId and seq
     if (ack.getNotificationId() != null) {
       notificationService.markDelivered(ack.getNotificationId());
     } else if (ack.getToUserId() != null && ack.getSeq() != null) {
-      // optional: mark by user+seq
-      // Add repository method to find by toUserId + seq if needed
     }
   }
+
   public static class AckMessage {
     private Long notificationId;
     private Long seq;
     private String toUserId;
-    // getters/setters
-    public Long getNotificationId() { return notificationId; }
-    public void setNotificationId(Long notificationId) { this.notificationId = notificationId; }
-    public Long getSeq() { return seq; }
-    public void setSeq(Long seq) { this.seq = seq; }
-    public String getToUserId(){return toUserId;}
-    public void setToUserId(String s){this.toUserId=s;}
+
+    public Long getNotificationId() {
+      return notificationId;
+    }
+
+    public void setNotificationId(Long notificationId) {
+      this.notificationId = notificationId;
+    }
+
+    public Long getSeq() {
+      return seq;
+    }
+
+    public void setSeq(Long seq) {
+      this.seq = seq;
+    }
+
+    public String getToUserId() {
+      return toUserId;
+    }
+
+    public void setToUserId(String s) {
+      this.toUserId = s;
+    }
   }
 
-  // DTOs used by client
   public static class ClientMessage {
     private String toUserId;
     private String content;

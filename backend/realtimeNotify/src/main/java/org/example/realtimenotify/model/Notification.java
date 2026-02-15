@@ -30,16 +30,47 @@ public class Notification {
     this.createdAt = createdAt;
   }
 
-  public Long getId() { return id; }
-  public String getToUserId() { return toUserId; }
-  public void setToUserId(String toUserId) { this.toUserId = toUserId; }
-  public String getPayload() { return payload; }
-  public void setPayload(String payload) { this.payload = payload; }
-  public Long getSeq() { return seq; }
-  public void setSeq(Long seq) { this.seq = seq; }
-  public Instant getCreatedAt() { return createdAt; }
-  public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-  public boolean isDelivered() { return delivered; }
-  public void setDelivered(boolean delivered) { this.delivered = delivered; }
-}
+  public Long getId() {
+    return id;
+  }
 
+  public String getToUserId() {
+    return toUserId;
+  }
+
+  public void setToUserId(String toUserId) {
+    this.toUserId = toUserId;
+  }
+
+  public String getPayload() {
+    return payload;
+  }
+
+  public void setPayload(String payload) {
+    this.payload = payload;
+  }
+
+  public Long getSeq() {
+    return seq;
+  }
+
+  public void setSeq(Long seq) {
+    this.seq = seq;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(Instant createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public boolean isDelivered() {
+    return delivered;
+  }
+
+  public void setDelivered(boolean delivered) {
+    this.delivered = delivered;
+  }
+}
