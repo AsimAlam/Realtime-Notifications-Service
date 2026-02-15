@@ -43,7 +43,6 @@
             log('connected: ' + frame);
             client.subscribe('/user/queue/messages', (m)=>{ log('[private] '+m.body); });
             client.subscribe('/topic/announcements', (m)=>{ log('[topic] '+m.body); });
-// recover missed
             client.send('/app/recover', {}, JSON.stringify({lastSeenSeq: 0}));
         }, (err)=>{ log('err ' + JSON.stringify(err)); });
     };

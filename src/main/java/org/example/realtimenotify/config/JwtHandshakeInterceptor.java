@@ -14,7 +14,6 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 
   private final JwtService jwtService = new JwtService();
@@ -34,7 +33,10 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
       token = auth.get(0).replace("Bearer ", "");
     }
 
-    log.debug("Attempting WS handshake from URI={} headersPresent={}", request.getURI(), auth != null && !auth.isEmpty());
+    log.debug(
+        "Attempting WS handshake from URI={} headersPresent={}",
+        request.getURI(),
+        auth != null && !auth.isEmpty());
 
     if (token == null) {
       URI uri = request.getURI();

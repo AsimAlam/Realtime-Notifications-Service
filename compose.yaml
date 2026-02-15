@@ -21,7 +21,6 @@ services:
   redis:
     image: redis:7
     ports: ["6379:6379"]
-# If you want RabbitMQ broker-relay in future, uncomment and enable STOMP plugin image
 # rabbitmq:
 # image: rabbitmq:3.11-management
 # ports: ["5672:5672","15672:15672","61613:61613"]

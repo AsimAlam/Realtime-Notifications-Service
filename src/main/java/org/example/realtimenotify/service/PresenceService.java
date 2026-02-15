@@ -1,54 +1,66 @@
 package org.example.realtimenotify.service;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 /** PresenceService: uses Redis set if available, otherwise in-memory concurrent set. */
 @Service
 public class PresenceService {
-  private final RedisTemplate<String, String> redis; // may be null
-  private final String key = "presence:users";
+  private final StringRedisTemplate redis;
+  private static final String GLOBAL_SET_KEY = "presence:users";
 
-  // In-memory fallback set
-  private final ConcurrentHashMap<String, Boolean> memoryPresence = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, java.util.Set<String>> sessions = new ConcurrentHashMap<>();
 
-  public PresenceService(RedisTemplate<String, String> redis) {
+  public PresenceService(@Autowired(required = false) StringRedisTemplate redis) {
     this.redis = redis;
   }
 
-  public void markOnline(String userId) {
+  public void markOnline(String userId, String sessionId) {
     if (redis != null) {
-      redis.opsForSet().add(key, userId);
+      String sessionsKey = "presence:user:" + userId + ":sessions";
+      redis.opsForSet().add(sessionsKey, sessionId);
+      redis.opsForSet().add(GLOBAL_SET_KEY, userId);
+      redis.expire(sessionsKey, java.time.Duration.ofMinutes(10));
     } else {
-      memoryPresence.put(userId, Boolean.TRUE);
+      sessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(sessionId);
     }
   }
 
-  public void markOffline(String userId) {
+  public void markOffline(String userId, String sessionId) {
     if (redis != null) {
-      redis.opsForSet().remove(key, userId);
+      String sessionsKey = "presence:user:" + userId + ":sessions";
+      redis.opsForSet().remove(sessionsKey, sessionId);
+      Long remaining = redis.opsForSet().size(sessionsKey);
+      if (remaining == null || remaining == 0L) {
+        redis.opsForSet().remove(GLOBAL_SET_KEY, userId);
+      }
     } else {
-      memoryPresence.remove(userId);
-    }
-  }
-
-  public Set<String> getOnlineUsers() {
-    if (redis != null) {
-      return redis.opsForSet().members(key);
-    } else {
-      return Collections.unmodifiableSet(memoryPresence.keySet());
+      sessions.computeIfPresent(userId, (k, set) -> {
+        set.remove(sessionId);
+        return set.isEmpty() ? null : set;
+      });
     }
   }
 
   public boolean isOnline(String userId) {
     if (redis != null) {
-      Boolean member = redis.opsForSet().isMember(key, userId);
+      Boolean member = redis.opsForSet().isMember(GLOBAL_SET_KEY, userId);
       return Boolean.TRUE.equals(member);
     } else {
-      return memoryPresence.containsKey(userId);
+      java.util.Set<String> set = sessions.get(userId);
+      return set != null && !set.isEmpty();
+    }
+  }
+
+  public java.util.Set<String> getOnlineUsers() {
+    if (redis != null) {
+      java.util.Set<String> members = redis.opsForSet().members(GLOBAL_SET_KEY);
+      return members == null ? java.util.Collections.emptySet() : members;
+    } else {
+      return java.util.Collections.unmodifiableSet(sessions.keySet());
     }
   }
 }
+
