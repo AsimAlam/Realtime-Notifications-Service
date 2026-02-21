@@ -1,140 +1,129 @@
 package org.example.realtimenotify.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 import org.example.realtimenotify.model.Notification;
 import org.example.realtimenotify.service.NotificationService;
-import org.example.realtimenotify.service.RateLimiterService;
+import org.example.realtimenotify.service.PresenceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 @Controller
 public class MessagingController {
 
-  private final SimpMessagingTemplate template;
-  private final NotificationService notificationService;
-  private final RateLimiterService rateLimiterService;
+  private static final Logger log = LoggerFactory.getLogger(MessagingController.class);
 
-  private final Logger log = LoggerFactory.getLogger(MessagingController.class);
+  private final NotificationService notificationService;
+  private final PresenceService presenceService;
+  private final SimpMessagingTemplate template;
+  private final ObjectMapper mapper = new ObjectMapper();
 
   public MessagingController(
-      SimpMessagingTemplate template,
       NotificationService notificationService,
-      RateLimiterService rateLimiterService) {
-    this.template = template;
+      PresenceService presenceService,
+      SimpMessagingTemplate template) {
     this.notificationService = notificationService;
-    this.rateLimiterService = rateLimiterService;
-  }
-
-  @MessageMapping("/send")
-  public void handleMessage(@Payload ClientMessage msg, Principal principal) {
-    String from = (principal != null) ? principal.getName() : "anonymous";
-    log.info(
-        "STOMP /send received - from={}, to={}, content={}",
-        from,
-        msg.getToUserId(),
-        msg.getContent());
-    Notification n = notificationService.saveNotification(msg.getToUserId(), msg.getContent());
-    log.info("Sending via convertAndSendToUser to={} id={}", msg.getToUserId(), n.getId());
-    template.convertAndSendToUser(msg.getToUserId(), "/queue/notifications", n);
-  }
-
-  @MessageMapping("/broadcast")
-  public void broadcast(@Payload BroadcastMessage message) {
-    Notification n = notificationService.saveNotification(null, message.getContent());
-    template.convertAndSend("/topic/announcements", n);
-  }
-
-  @MessageMapping("/recover")
-  public void recover(RecoverRequest req, Principal principal) {
-    if (principal == null) return;
-    String user = principal.getName();
-    notificationService.replayMissed(user, req.getLastSeenSeq(), template);
-  }
-
-  @MessageMapping("/ack")
-  public void handleAck(@Payload AckMessage ack, Principal principal) {
-    if (ack.getNotificationId() != null) {
-      notificationService.markDelivered(ack.getNotificationId());
-    } else if (ack.getToUserId() != null && ack.getSeq() != null) {
-    }
-  }
-
-  public static class AckMessage {
-    private Long notificationId;
-    private Long seq;
-    private String toUserId;
-
-    public Long getNotificationId() {
-      return notificationId;
-    }
-
-    public void setNotificationId(Long notificationId) {
-      this.notificationId = notificationId;
-    }
-
-    public Long getSeq() {
-      return seq;
-    }
-
-    public void setSeq(Long seq) {
-      this.seq = seq;
-    }
-
-    public String getToUserId() {
-      return toUserId;
-    }
-
-    public void setToUserId(String s) {
-      this.toUserId = s;
-    }
+    this.presenceService = presenceService;
+    this.template = template;
   }
 
   public static class ClientMessage {
-    private String toUserId;
-    private String content;
+    public String toUserId;
+    public String content;
+  }
 
-    public String getToUserId() {
-      return toUserId;
-    }
+  public static class AckMessage {
+    public Long notificationId;
+    public Long seq;
+    public String toUserId;
+  }
 
-    public void setToUserId(String toUserId) {
-      this.toUserId = toUserId;
-    }
+  public static class RecoverMessage {
+    public Long lastSeenSeq;
+  }
 
-    public String getContent() {
-      return content;
-    }
+  @MessageMapping("/send")
+  public void handleSend(@Payload ClientMessage msg, Principal principal) {
+    String from = principal != null ? principal.getName() : "anonymous";
+    String to = msg.toUserId;
+    String content = msg.content;
+    log.info("STOMP /send from={} to={} content={}", from, to, content);
 
-    public void setContent(String content) {
-      this.content = content;
+    try {
+      Map<String, Object> payloadMap = new HashMap<>();
+      payloadMap.put("from", from);
+      payloadMap.put("content", content);
+      String payloadJson = mapper.writeValueAsString(payloadMap);
+
+      Notification n = notificationService.saveNotification(to, payloadJson);
+
+      template.convertAndSendToUser(to, "/queue/notifications", n);
+      log.info("Delivered notification id={} to user={}", n.getId(), to);
+    } catch (Exception ex) {
+      log.error("handleSend failed", ex);
     }
   }
 
-  public static class BroadcastMessage {
-    private String content;
-
-    public String getContent() {
-      return content;
+  @MessageMapping("/ack")
+  public void handleAck(@Payload AckMessage ack) {
+    if (ack == null || ack.notificationId == null) {
+      log.warn("ACK without id: {}", ack);
+      return;
     }
+    log.info("ACK received id={} seq={} toUser={}", ack.notificationId, ack.seq, ack.toUserId);
 
-    public void setContent(String c) {
-      this.content = c;
+    Notification updated = notificationService.markDelivered(ack.notificationId);
+    if (updated == null) return;
+
+    try {
+      String payload = updated.getPayload();
+      if (payload != null) {
+        var node = mapper.readTree(payload);
+        if (node.has("from")) {
+          String originalSender = node.get("from").asText();
+          template.convertAndSendToUser(
+              originalSender,
+              "/queue/delivery-confirm",
+              mapper
+                  .createObjectNode()
+                  .put("notificationId", updated.getId())
+                  .put("toUserId", updated.getToUserId())
+                  .put("delivered", true));
+          log.info("Sent delivery-confirm to {}", originalSender);
+        }
+      }
+    } catch (Exception e) {
+      log.warn(
+          "Failed to notify original sender of delivery for id={}: {}",
+          ack.notificationId,
+          e.toString());
     }
   }
 
-  public static class RecoverRequest {
-    private long lastSeenSeq;
-
-    public long getLastSeenSeq() {
-      return lastSeenSeq;
+  @MessageMapping("/recover")
+  public void handleRecover(@Payload RecoverMessage rmsg, Principal principal) {
+    if (principal == null) {
+      log.debug("Recover requested without principal");
+      return;
     }
+    String user = principal.getName();
+    long lastSeen = rmsg != null && rmsg.lastSeenSeq != null ? rmsg.lastSeenSeq : 0L;
+    log.info("Recover for user={} lastSeenSeq={}", user, lastSeen);
+    notificationService.replayMissed(user, lastSeen, template);
+  }
 
-    public void setLastSeenSeq(long s) {
-      this.lastSeenSeq = s;
-    }
+  @MessageMapping("/heartbeat")
+  public void heartbeat(Principal principal, StompHeaderAccessor sha) {
+    if (principal == null) return;
+    String user = principal.getName();
+    String sessionId = sha.getSessionId();
+    presenceService.markOnline(user, sessionId);
   }
 }

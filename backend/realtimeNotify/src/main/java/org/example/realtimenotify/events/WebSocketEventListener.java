@@ -1,5 +1,7 @@
 package org.example.realtimenotify.events;
 
+import java.util.Map;
+import java.util.Set;
 import org.example.realtimenotify.service.NotificationService;
 import org.example.realtimenotify.service.PresenceService;
 import org.slf4j.Logger;
@@ -11,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
-/** Listens for STOMP connect/disconnect events and updates presence using sessionId-aware API. */
 @Component
 public class WebSocketEventListener {
 
@@ -39,6 +40,9 @@ public class WebSocketEventListener {
       log.debug("STOMP CONNECT: user={}, sessionId={}", user, sessionId);
       presenceService.markOnline(user, sessionId);
 
+      Set<String> users = presenceService.getOnlineUsers();
+      template.convertAndSend("/topic/presence", Map.of("users", users));
+
       try {
         notificationService.replayPendingUndelivered(user, template);
       } catch (Exception e) {
@@ -57,6 +61,10 @@ public class WebSocketEventListener {
       String sessionId = sha.getSessionId();
       log.debug("STOMP DISCONNECT: user={}, sessionId={}", user, sessionId);
       presenceService.markOffline(user, sessionId);
+
+      Set<String> users = presenceService.getOnlineUsers();
+      template.convertAndSend("/topic/presence", Map.of("users", users));
+
     } else {
       log.debug("STOMP DISCONNECT with no Principal, sessionId={}", sha.getSessionId());
     }
