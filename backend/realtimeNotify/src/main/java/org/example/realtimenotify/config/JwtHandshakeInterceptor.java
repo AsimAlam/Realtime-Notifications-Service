@@ -90,6 +90,6 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
       ServerHttpResponse response,
       WebSocketHandler wsHandler,
       Exception exception) {
-    // no-op
+    log.debug("inside afterHandshake");
   }
 }

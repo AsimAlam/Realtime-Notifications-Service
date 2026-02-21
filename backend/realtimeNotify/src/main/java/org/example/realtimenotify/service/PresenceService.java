@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-/** used Redis set if available else in-memory used */
 @Service
 public class PresenceService {
   private final StringRedisTemplate redis;
