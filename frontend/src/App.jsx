@@ -45,7 +45,7 @@ export default function App() {
       return t
     } catch (err) {
       console.error(err)
-      showToast('Failed to get token')
+      showToast('UserName already exists')
       throw err
     }
   }

@@ -5,7 +5,9 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import java.security.Key;
 import java.util.Date;
+import org.springframework.stereotype.Service;
 
+@Service
 public class JwtService {
 
   private final Key key;
