@@ -1,12 +1,19 @@
-FROM maven:3.9.3-eclipse-temurin-17 AS build
-LABEL authors="asima"
-WORKDIR /app
-COPY pom.xml mvnw ./
+# Dockerfile
+# Build stage
+FROM maven:3.9.6-openjdk-17 AS build
+WORKDIR /workspace
+COPY pom.xml .
 COPY src ./src
 RUN mvn -B -DskipTests package
 
-
-FROM eclipse-temurin:17-jre
+# Run stage
+FROM openjdk:17-jdk-slim
 WORKDIR /app
-COPY --from=build /app/target/realtime-notify-0.0.1-SNAPSHOT.jar app.jar
+ARG JAR_FILE=target/*.jar
+COPY --from=build /workspace/target/*.jar /app/app.jar
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD curl -fsS http://localhost:8080/actuator/health || exit 1
+
 ENTRYPOINT ["java","-jar","/app/app.jar"]
