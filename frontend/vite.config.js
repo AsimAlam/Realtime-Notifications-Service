@@ -1,20 +1,19 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  define: {
-    global: 'window',
-    'process.env': {}
-  },
-  optimizeDeps: {
-    include: ['sockjs-client', '@stomp/stompjs']
-  },
+  plugins: [react()],
   server: {
-    port: 3000,
     proxy: {
       '/auth': 'http://localhost:8080',
+      '/ws': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true
+      },
       '/notify': 'http://localhost:8080',
       '/presence': 'http://localhost:8080',
-      '/ws': { target: 'http://localhost:8080', ws: true }
+      '/actuator': 'http://localhost:8080'
     }
   }
-})
+});

@@ -10,7 +10,7 @@ export default function App() {
       <Suspense fallback={<div style={{ padding: 20 }}>Loading…</div>}>
         <Routes>
           <Route path="*" element={<Navigate to="/messages" replace />} />
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Navigate to="/messages" replace />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/presence" element={<Presence />} />
         </Routes>

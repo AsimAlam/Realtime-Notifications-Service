@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../services/api';
+import authApi from '../service/authApi';
 
 const TOKEN_KEY = 'rn_token';
 const USER_KEY = 'rn_username';
@@ -19,8 +19,9 @@ export function useAuth() {
     }, [token]);
 
     async function requestToken(name) {
-        const res = await api.get(`/auth/token?username=${encodeURIComponent(name)}`);
-        const t = res.data.token;
+        const raw = await authApi.getTokenForUsername(name);
+        if (!raw) throw new Error('No token returned from server');
+        const t = typeof raw === 'string' && raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
         setToken(t);
         setUsername(name);
         return t;

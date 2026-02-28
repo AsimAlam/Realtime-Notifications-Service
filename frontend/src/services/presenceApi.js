@@ -1,5 +1,5 @@
 import api from './api'
-import { ENDPOINTS } from '../api/endpoints'
+import { ENDPOINTS } from '../api/endPoints';
 
 export async function fetchPresence() {
     const res = await api.get(ENDPOINTS.presence.list)

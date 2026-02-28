@@ -9,7 +9,10 @@ export function AuthProvider({ children }) {
 
     async function requestToken(name) {
         const res = await getTokenForUsername(name)
-        const t = res.token || res
+        const raw = res?.token ?? res
+        if (!raw) throw new Error('No token returned from server')
+
+        const t = (typeof raw === 'string' && raw.startsWith('Bearer ')) ? raw : `Bearer ${raw}`
         setToken(t)
         setUsername(name)
         sessionStorage.setItem('rn_token', t)

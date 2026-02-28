@@ -17,19 +17,21 @@ export default function Messages() {
     const [text, setText] = useState('')
 
     async function handleGetToken() {
-        if (!username || username.trim() === '') return alert('Enter a username first');
+        if (!username || username.trim() === '') return alert('Enter a username first')
         try {
-            await requestToken(username);
-            setTimeout(() => handleConnect(), 150);
+            const t = await requestToken(username)
+            handleConnect(t)
         } catch (err) {
-            console.error('Failed to get token', err);
-            alert('Failed to get token: ' + (err?.response?.data || err.message || 'unknown'));
+            console.error('Failed to get token', err)
+            alert('Failed to get token: ' + (err?.response?.data || err.message || 'unknown'))
         }
     }
 
-    function handleConnect() {
-        if (!token) return alert('no token')
-        connect(token, () => {
+    function handleConnect(tokenArg) {
+        const connectToken = tokenArg || token
+        if (!connectToken) return alert('no token')
+
+        connect(connectToken, () => {
             try {
                 subscribe('/topic/presence', m => {
                     try { const p = JSON.parse(m.body); setOnlineUsers(p.users || []) } catch {
@@ -45,7 +47,11 @@ export default function Messages() {
                     const notif = JSON.parse(m.body)
                     const realId = notif.id != null ? String(notif.id) : null
                     let parsedPayload
-                    try { parsedPayload = JSON.parse(notif.payload) } catch (e) { parsedPayload = { content: notif.payload } }
+                    try {
+                        parsedPayload = JSON.parse(notif.payload)
+                    } catch (e) {
+                        parsedPayload = { content: notif.payload }
+                    }
                     const messageObj = {
                         id: realId || ('tmp-' + Date.now()),
                         payload: parsedPayload.content || notif.payload,
@@ -65,7 +71,9 @@ export default function Messages() {
                     })
 
                     if (realId) publish('/app/ack', { notificationId: realId, seq: notif.seq, toUserId: notif.toUserId })
-                } catch (e) { console.error(e) }
+                } catch (e) {
+                    console.error(e)
+                }
             })
 
             subscribe('/user/queue/delivery-confirm', m => {
@@ -80,7 +88,9 @@ export default function Messages() {
                         }
                         return updated
                     })
-                } catch (e) { console.error(e) }
+                } catch (e) {
+                    console.error(e)
+                }
             })
 
             publish('/app/recover', { lastSeenSeq: 0 })
@@ -133,7 +143,7 @@ export default function Messages() {
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <button className="btn" onClick={handleGetToken}>Get Token</button>
-                    <button className="btn secondary" onClick={connected ? handleDisconnect : handleConnect}>{connected ? 'Disconnect' : 'Connect'}</button>
+                    <button className="btn secondary" onClick={connected ? handleDisconnect : () => handleConnect()}>{connected ? 'Disconnect' : 'Connect'}</button>
                 </div>
 
                 <div style={{ marginBottom: 8 }}>
