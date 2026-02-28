@@ -24,7 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   public void registerStompEndpoints(StompEndpointRegistry registry) {
     registry
         .addEndpoint("/ws")
-        .setAllowedOriginPatterns("*")
+        .setAllowedOriginPatterns("https://realtime-notifications-service-frontend.onrender.com")
         .setHandshakeHandler(new UserHandshakeHandler())
         .addInterceptors(new JwtHandshakeInterceptor())
         .withSockJS();
