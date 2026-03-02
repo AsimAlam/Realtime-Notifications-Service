@@ -34,7 +34,10 @@ export default function Messages() {
         connect(connectToken, () => {
             try {
                 subscribe('/topic/presence', m => {
-                    try { const p = JSON.parse(m.body); setOnlineUsers(p.users || []) } catch {
+                    try {
+                        const p = JSON.parse(m.body);
+                        setOnlineUsers(p.users || [])
+                    } catch {
                         console.error('Failed to parse presence message', m.body)
                     }
                 })
@@ -125,7 +128,13 @@ export default function Messages() {
 
     async function sendRest() {
         if (!recipient) return alert('select recipient')
-        try { await sendNotifyRest({ userId: recipient, message: text || '(empty)' }); setText('') } catch (e) { console.error(e); alert('REST failed') }
+        try {
+            await sendNotifyRest({ userId: recipient, message: text || '(empty)' });
+            setText('')
+        }
+        catch (e) {
+            console.error(e); alert('REST failed')
+        }
     }
 
     return (

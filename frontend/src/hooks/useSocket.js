@@ -8,7 +8,9 @@ export function useSocket() {
     useEffect(() => {
         return () => {
             subsRef.current.forEach(d => socket.unsubscribe(d));
-            try { socket.disconnect(); } catch (e) {
+            try { 
+                socket.disconnect(); 
+            } catch (e) {
                 console.error('Error disconnecting socket on unmount', e);
             }
         };

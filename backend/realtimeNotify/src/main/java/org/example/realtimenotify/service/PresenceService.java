@@ -1,5 +1,7 @@
 package org.example.realtimenotify.service;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -10,8 +12,7 @@ public class PresenceService {
   private final StringRedisTemplate redis;
   private static final String GLOBAL_SET_KEY = "presence:users";
 
-  private final ConcurrentHashMap<String, java.util.Set<String>> sessions =
-      new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Set<String>> sessions = new ConcurrentHashMap<>();
 
   public PresenceService(@Autowired(required = false) StringRedisTemplate redis) {
     this.redis = redis;
@@ -51,17 +52,17 @@ public class PresenceService {
       Boolean member = redis.opsForSet().isMember(GLOBAL_SET_KEY, userId);
       return Boolean.TRUE.equals(member);
     } else {
-      java.util.Set<String> set = sessions.get(userId);
+      Set<String> set = sessions.get(userId);
       return set != null && !set.isEmpty();
     }
   }
 
-  public java.util.Set<String> getOnlineUsers() {
+  public Set<String> getOnlineUsers() {
     if (redis != null) {
-      java.util.Set<String> members = redis.opsForSet().members(GLOBAL_SET_KEY);
-      return members == null ? java.util.Collections.emptySet() : members;
+      Set<String> members = redis.opsForSet().members(GLOBAL_SET_KEY);
+      return members == null ? Collections.emptySet() : members;
     } else {
-      return java.util.Collections.unmodifiableSet(sessions.keySet());
+      return Collections.unmodifiableSet(sessions.keySet());
     }
   }
 }
