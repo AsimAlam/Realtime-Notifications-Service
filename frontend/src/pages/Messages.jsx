@@ -6,6 +6,7 @@ import Composer from '../components/Composer'
 import PresenceList from '../components/PresenceList'
 import { fetchPresence } from '../services/presenceApi'
 import { sendNotifyRest } from '../services/notificationsApi'
+import toast from "react-hot-toast";
 
 export default function Messages() {
     const { username, token, requestToken, setUsername } = useAuth()
@@ -17,19 +18,23 @@ export default function Messages() {
     const [text, setText] = useState('')
 
     async function handleGetToken() {
-        if (!username || username.trim() === '') return alert('Enter a username first')
+        if (!username || username.trim() === '') return toast.error('Enter a username first')
         try {
             const t = await requestToken(username)
             handleConnect(t)
         } catch (err) {
             console.error('Failed to get token', err)
-            alert('Failed to get token: ' + (err?.response?.data || err.message || 'unknown'))
+            if(err.response?.status === 409) {
+                toast.error('Invalid username. Usernames must be 3-20 characters long and can only contain letters, numbers, and underscores.')
+            }else{
+                toast.error('Failed to get token: ' + (err?.response?.data || err.message || 'unknown'))
+            }
         }
     }
 
     function handleConnect(tokenArg) {
         const connectToken = tokenArg || token
-        if (!connectToken) return alert('no token')
+        if (!connectToken) return toast.error('no token')
 
         connect(connectToken, () => {
             try {
@@ -118,8 +123,8 @@ export default function Messages() {
     }, [])
 
     function sendPrivate() {
-        if (!connected) return alert('connect first')
-        if (!recipient) return alert('select recipient')
+        if (!connected) return toast.error('connect first')
+        if (!recipient) return toast.error('select recipient')
         const tmpId = 'tmp-' + Date.now()
         setMessages(prev => [...prev, { id: tmpId, payload: text, from: username, toUserId: recipient, _me: true, delivered: false, createdAt: new Date().toISOString() }])
         publish('/app/send', { toUserId: recipient, content: text || '(empty)' })
@@ -127,13 +132,13 @@ export default function Messages() {
     }
 
     async function sendRest() {
-        if (!recipient) return alert('select recipient')
+        if (!recipient) return toast.error('select recipient')
         try {
             await sendNotifyRest({ userId: recipient, message: text || '(empty)' });
             setText('')
         }
         catch (e) {
-            console.error(e); alert('REST failed')
+            console.error(e); toast.error('REST failed')
         }
     }
 
@@ -152,7 +157,7 @@ export default function Messages() {
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <button className="btn" onClick={handleGetToken}>Get Token</button>
-                    <button className="btn secondary" onClick={connected ? handleDisconnect : () => handleConnect()}>{connected ? 'Disconnect' : 'Connect'}</button>
+                    <button className="btn secondary" style={{color : !connected ? "red" : "green"}} onClick={connected ? handleDisconnect : () => handleConnect()}>{connected ? 'Disconnect' : 'Connect'}</button>
                 </div>
 
                 <div style={{ marginBottom: 8 }}>
