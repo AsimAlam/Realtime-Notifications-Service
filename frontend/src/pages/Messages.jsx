@@ -157,7 +157,7 @@ export default function Messages() {
 
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <button className="btn" onClick={handleGetToken}>Get Token</button>
-                    <button className="btn secondary" style={{color : !connected ? "red" : "green"}} onClick={connected ? handleDisconnect : () => handleConnect()}>{connected ? 'Disconnect' : 'Connect'}</button>
+                    <button className="btn secondary" style={{color : connected ? "red" : "green"}} onClick={connected ? handleDisconnect : () => handleConnect()}>{connected ? 'Disconnect' : 'Connect'}</button>
                 </div>
 
                 <div style={{ marginBottom: 8 }}>
